@@ -1,41 +1,22 @@
 package sample;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.TreeMap;
-
-import org.apache.poi.ss.usermodel.BorderStyle;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.CellStyle;
-import org.apache.poi.ss.usermodel.CreationHelper;
-import org.apache.poi.ss.usermodel.FillPatternType;
-import org.apache.poi.ss.usermodel.Font;
-import org.apache.poi.ss.usermodel.HorizontalAlignment;
-import org.apache.poi.ss.usermodel.IndexedColors;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.VerticalAlignment;
-import org.apache.poi.ss.usermodel.Workbook;
+import javafx.application.Application;
+import javafx.event.ActionEvent;
+import javafx.fxml.FXML;
+import javafx.scene.control.TextField;
+import javafx.stage.FileChooser;
+import javafx.stage.Stage;
+import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
+import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
-import javafx.application.Application;
-import javafx.event.ActionEvent;
-import javafx.fxml.FXML;
-import javafx.stage.FileChooser;
-import javafx.stage.Stage;
+import java.io.*;
+import java.util.*;
+import java.util.Map.Entry;
 
 public class Controller extends Application {
 
@@ -49,6 +30,16 @@ public class Controller extends Application {
     Map<String, List<String>> treeMap;
 
     String[] time = {"11:00"};
+
+
+    @FXML
+    TextField raceId;
+
+    @FXML
+    TextField raceOrder;
+
+    @FXML
+    TextField startListName;
 
 
     @FXML
@@ -151,7 +142,7 @@ public class Controller extends Application {
                     contenders = new ArrayList<>();
                 }
 
-            wb.close();
+                wb.close();
             } catch (Exception ioe) {
                 ioe.printStackTrace();
             }
@@ -235,12 +226,10 @@ public class Controller extends Application {
         cell1.setCellStyle(headLineCellStyle);
 
 
-
         row = sheet.createRow(2);
         cell1 = row.createCell(0);
         cell1.setCellValue("Regata \"TISIN CVET\""); //number of the race
         cell1.setCellStyle(headLineCellStyle);
-
 
 
         row = sheet.createRow(3);
@@ -490,6 +479,376 @@ public class Controller extends Application {
         styles.put("formula_2", style);
 
         return styles;
+    }
+
+    @FXML
+    void saveRace() {
+
+        String TRAK = null;
+
+        List<String> order = new ArrayList<>();
+
+        List<String> orderWithContenders = new ArrayList<>();
+
+
+        System.out.println(raceId.getText());
+
+        if ("".equals(raceId.getText())) {
+            return;
+        }
+
+        try {
+
+            String startlistName = "rajtlistav2.xlsx";
+            if (!"".equals(this.startListName)) {
+                startlistName = this.startListName.getText();
+            }
+
+            XSSFWorkbook wb = new XSSFWorkbook(new File(startlistName));
+            //POIFSFileSystem fs = new POIFSFileSystem(new FileInputStream(f));
+            //HSSFWorkbook wb = new HSSFWorkbook(fs);
+            XSSFSheet sheet = wb.getSheetAt(0);
+            XSSFRow row;
+            XSSFCell cell;
+
+            int rows; // No of rows
+            rows = sheet.getPhysicalNumberOfRows();
+
+            int cols = 0; // No of columns
+            int tmp = 0;
+
+            // This trick ensures that we get the data properly even if it doesn't start from first few rows
+            for (int i = 0; i < 10 || i < rows; i++) {
+                row = sheet.getRow(i);
+                if (row != null) {
+                    tmp = sheet.getRow(i).getPhysicalNumberOfCells();
+                    if (tmp > cols) cols = tmp;
+                }
+            }
+
+            for (int r = 0; r < rows; r++) {
+                row = sheet.getRow(r);
+                if (row != null) {
+                    cell = row.getCell(0);
+                    if (cell != null) {
+                        // Code gose here
+                        System.out.println(cell);
+                        if (cell.toString().equals(raceId.getText()) || cell.toString().replace("0", "").equals(raceId.getText())) {
+                            System.out.println("I found an ID");
+
+                            TRAK = cell.toString() + "*";
+
+                            cell = row.getCell(1);
+                            TRAK += cell.toString() + "*";
+
+
+                            cell = row.getCell(2);
+                            TRAK += cell.toString() + "*";
+
+
+                            cell = row.getCell(3);
+                            TRAK += cell.toString() + "*";
+
+
+                            cell = row.getCell(5);
+                            TRAK += cell.toString() + "*";
+
+                            System.out.println(TRAK);
+
+
+                            order = Arrays.asList(raceOrder.getText().split(","));
+
+                            r++;
+                            int c = 1;
+
+                            int saveRowNum = r;
+
+                            for (String s : order) {
+                                System.out.println(s);
+                                for (;; r++) {
+                                    row = sheet.getRow(r);
+                                    if (row != null) {
+                                        cell = row.getCell(1);
+                                        if (cell != null) {
+                                            String cellString = cell.toString().replace(".", "").replace("0", "");
+                                            if (s.equals(cellString)) {
+                                                String contender;
+
+                                                contender = cellString + "*";
+
+                                                cell = row.getCell(2);
+                                                contender += cell.toString() + "*";
+
+
+                                                cell = row.getCell(3);
+                                                contender += cell.toString() + "*";
+
+
+                                                cell = row.getCell(4);
+                                                contender += cell.toString() + "*";
+
+                                                orderWithContenders.add(contender);
+
+                                                System.out.println(contender + "<<");
+                                                r = saveRowNum;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+
+                            break;
+                        }
+                    }
+                }
+            }
+//TODO:            wb.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        System.out.println("Not a fuckin infinit loop");
+
+        try {
+
+            Set klubs = new HashSet();
+
+            FileInputStream file = new FileInputStream(new File("eredmenyek.xlsx"));
+
+            XSSFWorkbook workbook = new XSSFWorkbook(file);
+            XSSFSheet sheet = workbook.getSheetAt(0);
+            Cell cell = null;
+            Row row = null;
+            //Update the value of cell
+
+            Font headerFont = workbook.createFont();
+            headerFont.setBold(true);
+            headerFont.setFontHeightInPoints((short) 11);
+            //headerFont.setColor(IndexedColors.RED.getIndex());
+
+            CellStyle headerCellStyle = workbook.createCellStyle();
+            headerCellStyle.setFont(headerFont);
+
+            int rows = sheet.getPhysicalNumberOfRows();
+
+            rows += 4;
+
+            String[] splitedList = TRAK.split("\\*");
+
+            row = sheet.createRow(rows);
+            cell = sheet.getRow(rows).getCell(0,  Row.MissingCellPolicy.CREATE_NULL_AS_BLANK);
+            cell.setCellValue(splitedList[0]);
+            cell.setCellStyle(headerCellStyle);
+            cell = sheet.getRow(rows).getCell(1,  Row.MissingCellPolicy.CREATE_NULL_AS_BLANK);
+            cell.setCellValue("MESTO");
+            cell.setCellStyle(headerCellStyle);
+            cell = sheet.getRow(rows).getCell(2,  Row.MissingCellPolicy.CREATE_NULL_AS_BLANK);
+            cell.setCellValue(splitedList[2]);
+            cell.setCellStyle(headerCellStyle);
+            cell = sheet.getRow(rows).getCell(3,  Row.MissingCellPolicy.CREATE_NULL_AS_BLANK);
+            cell.setCellValue(splitedList[3]);
+            cell.setCellStyle(headerCellStyle);
+            cell = sheet.getRow(rows).getCell(5,  Row.MissingCellPolicy.CREATE_NULL_AS_BLANK);
+            cell.setCellValue("BODOVI");
+            cell.setCellStyle(headerCellStyle);
+
+
+            for (String s : orderWithContenders) {
+                String[] splited = s.split("\\*");
+
+                klubs.add(splited[2]);
+            }
+
+            rows++;
+            int mesto = 1;
+            for (String s : orderWithContenders) {
+                String[] splited = s.split("\\*");
+                row = sheet.createRow(rows);
+
+
+                cell = sheet.getRow(rows).getCell(0,  Row.MissingCellPolicy.CREATE_NULL_AS_BLANK);
+                cell.setCellValue(splited[0]);
+
+                cell = sheet.getRow(rows).getCell(1,  Row.MissingCellPolicy.CREATE_NULL_AS_BLANK);
+                cell.setCellValue(mesto);
+
+                cell = sheet.getRow(rows).getCell(2,  Row.MissingCellPolicy.CREATE_NULL_AS_BLANK);
+                cell.setCellValue(splited[1]); //name
+
+                cell = sheet.getRow(rows).getCell(3,  Row.MissingCellPolicy.CREATE_NULL_AS_BLANK);
+                cell.setCellValue(splited[2]); //klubb
+
+
+
+                cell = sheet.getRow(rows).getCell(4,  Row.MissingCellPolicy.CREATE_NULL_AS_BLANK);
+                cell.setCellValue(splited[3]); //TOWN
+
+                double points;
+                if (klubs.contains(splited[2])) {
+                    cell = sheet.getRow(rows).getCell(5,  Row.MissingCellPolicy.CREATE_NULL_AS_BLANK);
+                    if (splitedList[2].contains("2")) { //ha K-2 vagy MK-2 a futam
+                        points = Double.parseDouble(Integer.toString(klubs.size()))*1.5;
+                        cell.setCellValue(points); //POINTS*1.5
+                    } else {
+                        points = Double.parseDouble(Integer.toString(klubs.size()));
+                        cell.setCellValue(points); //POINTS
+                    }
+
+                    // team race points set
+                    for (int j = 4; j < 15; j++) {
+                        Row row2 = sheet.getRow(j);
+                        if (splited[2].equals(row2.getCell(8).toString())) {
+                            double actualVal = row2.getCell(9).getNumericCellValue();
+                            row2.getCell(9).setCellValue(actualVal+points);
+
+                        }
+                    }
+
+
+                    klubs.remove(splited[2]);
+
+                }
+
+                mesto++;
+                rows++;
+            }
+
+
+
+            for (int k = 0; k < 7; k++) {
+                sheet.autoSizeColumn(k);
+            }
+
+            file.close();
+
+            FileOutputStream outFile =new FileOutputStream(new File("eredmenyek.xlsx"));
+            workbook.write(outFile);
+            outFile.close();
+
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        System.out.println("Not a fuckin infinit loop2");
+    }
+
+
+    void writeToXYPosition(String value, int x, int y) {
+        Workbook workbook = null; // new HSSFWorkbook() for generating `.xls` file
+        try {
+            workbook = new XSSFWorkbook(new File("eredmenyek.xlsx"));
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (InvalidFormatException e) {
+            e.printStackTrace();
+        }
+
+        /* CreationHelper helps us create instances of various things like DataFormat,
+           Hyperlink, RichTextString etc, in a format (HSSF, XSSF) independent way */
+        CreationHelper createHelper = workbook.getCreationHelper();
+
+        // Create a Sheet
+        Sheet sheet = workbook.getSheetAt(0);
+
+        // Create a Font for styling header cells
+        //Font headerFont = workbook.createFont();
+        //headerFont.setBold(true);
+        //headerFont.setFontHeightInPoints((short) 14);
+        //headerFont.setColor(IndexedColors.RED.getIndex());
+
+        // Create a CellStyle with the font
+        //CellStyle headerCellStyle = workbook.createCellStyle();
+        //headerCellStyle.setFont(headerFont);
+
+
+        Font headLine = workbook.createFont();
+        headLine.setBold(true);
+        headLine.setFontHeightInPoints((short) 12);
+        //headerFont.setColor(IndexedColors.RED.getIndex());
+
+        CellStyle headLineCellStyle = workbook.createCellStyle();
+        headLineCellStyle.setFont(headLine);
+        headLineCellStyle.setAlignment(HorizontalAlignment.CENTER);
+
+        Font headerFont = workbook.createFont();
+        headerFont.setBold(true);
+        headerFont.setFontHeightInPoints((short) 11);
+        //headerFont.setColor(IndexedColors.RED.getIndex());
+
+        CellStyle headerCellStyle = workbook.createCellStyle();
+        headerCellStyle.setFont(headerFont);
+
+        Font text = workbook.createFont();
+        //headerFont.setBold(true);
+        text.setFontHeightInPoints((short) 10);
+        //headerFont.setColor(IndexedColors.RED.getIndex());
+
+        CellStyle textCell = workbook.createCellStyle();
+        textCell.setFont(text);
+
+
+        sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 6));
+        sheet.addMergedRegion(new CellRangeAddress(1, 1, 0, 6));
+        sheet.addMergedRegion(new CellRangeAddress(2, 2, 0, 6));
+        sheet.addMergedRegion(new CellRangeAddress(3, 3, 0, 6));
+
+        Row row = sheet.createRow(0);
+        Cell cell1 = row.createCell(0);
+        cell1.setCellValue("STARTNE LISTE"); //number of the race
+        cell1.setCellStyle(headLineCellStyle);
+
+        row = sheet.createRow(1);
+        cell1 = row.createCell(0);
+        cell1.setCellValue("KRK Tisin Cvet Senta"); //number of the race
+        cell1.setCellStyle(headLineCellStyle);
+
+
+        row = sheet.createRow(2);
+        cell1 = row.createCell(0);
+        cell1.setCellValue("Regata \"TISIN CVET\""); //number of the race
+        cell1.setCellStyle(headLineCellStyle);
+
+
+        row = sheet.createRow(3);
+        cell1 = row.createCell(0);
+        cell1.setCellValue("Senta, 16. jun 2018.godine "); //number of the race
+        cell1.setCellStyle(headLineCellStyle);
+
+
+        // Create a Row
+        int i = 5;
+        // Create cells
+
+
+        for (int k = 0; k < 7; k++) {
+            sheet.autoSizeColumn(k);
+        }
+
+        FileOutputStream fileOut = null;
+        try {
+            fileOut = new FileOutputStream("eredmenyek.xlsx");
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+        try {
+            workbook.write(fileOut);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        try {
+            fileOut.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        // Closing the workbook
+        try {
+            workbook.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
